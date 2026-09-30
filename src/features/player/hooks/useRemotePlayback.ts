@@ -224,7 +224,7 @@ export function useRemotePlayback(audioRef: React.RefObject<HTMLAudioElement | n
       };
     };
     if (sessionId) connect();
-    else updateState({ statusText: '请设置 Session ID' });
+    else updateState({ statusText: '未连接' });
 
     return () => {
       disposed = true;

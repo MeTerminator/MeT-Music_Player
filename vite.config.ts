@@ -1,12 +1,10 @@
 import { defineConfig } from 'vite'
-import { fileURLToPath, URL } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
   base: '/player/',
-  build: { rollupOptions: { input: { player: fileURLToPath(new URL('./index.html', import.meta.url)), settings: fileURLToPath(new URL('./settings.html', import.meta.url)) } } },
   plugins: [
     react(),
     VitePWA({

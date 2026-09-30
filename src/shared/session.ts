@@ -12,9 +12,3 @@ export function readSessionId(): string {
     return fromUrl ?? '';
   }
 }
-
-export function saveSessionId(value: string): void {
-  const sessionId = value.trim();
-  if (sessionId) localStorage.setItem(SESSION_KEY, sessionId);
-  else localStorage.removeItem(SESSION_KEY);
-}

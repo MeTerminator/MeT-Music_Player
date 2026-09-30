@@ -16,7 +16,7 @@ pnpm build
 pnpm preview
 ```
 
-部署时的基础路径为 `/player/`。播放器位于 `/player/`，设置页位于 `/player/settings.html`。在设置页保存 Session ID 后返回播放器即可连接。也可以使用播放器 URL 的 `?sid=...` 参数；它会写入本地存储供后续使用。
+部署时的基础路径为 `/player/`。播放器位于 `/player/`。通过播放器 URL 的 `?sid=...` 参数传入 Session ID；播放器会将其保存到本地存储供后续使用。
 
 ## 目录结构
 
@@ -32,11 +32,9 @@ src/
       model/                   播放状态与接口类型
       utils/                   歌词、颜色和时间工具
       Player.tsx               页面结构
-    settings/                  Session ID 设置页
   shared/                      跨功能的 Session ID 存取
   main.tsx                     播放器入口
 index.html                     播放器 HTML 入口
-settings.html                  设置页 HTML 入口
 ```
 
 `useRemotePlayback` 管理 WebSocket、媒体元素和同步状态，卸载时关闭连接、取消请求并移除事件监听。`api/song.ts` 只负责网络请求和缓存。组件从 Context 获取状态，不直接操作 WebSocket。
