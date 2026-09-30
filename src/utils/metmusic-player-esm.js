@@ -286,7 +286,8 @@ class MeTMusicPlayer {
                     this.lastUpdateTs = Date.now();
 
                     const payload = data.data;
-                    const newStatus = payload.status;
+                    // play event always means playback, regardless of the status field.
+                    const newStatus = payload.event === "play" ? true : payload.status;
                     const newMid = payload.songMid || "";
                     const musicStartTs = payload.systemTime - (payload.currentTime || 0) * 1000;
 
