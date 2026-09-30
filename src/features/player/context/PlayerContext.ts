@@ -8,6 +8,7 @@ export interface PlayerContextValue {
   isAutoplayBlocked: boolean;
   resumePlayback: () => void;
   seekTo: (seconds: number) => void;
+  setVolume: (volume: number) => void;
 }
 
 export const PlayerContext = createContext<PlayerContextValue | null>(null);

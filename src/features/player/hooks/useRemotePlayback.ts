@@ -49,6 +49,13 @@ export function useRemotePlayback(audioRef: React.RefObject<HTMLAudioElement | n
     audio.currentTime = Math.max(0, Math.min(seconds, Number.isFinite(audio.duration) ? audio.duration : seconds));
   }, [audioRef]);
 
+  const setVolume = useCallback((volume: number) => {
+    const audio = audioRef.current;
+    if (!audio || !Number.isFinite(volume)) return;
+    audio.volume = Math.min(1, Math.max(0, volume));
+    updateState({ volume: audio.volume });
+  }, [audioRef, updateState]);
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -163,6 +170,7 @@ export function useRemotePlayback(audioRef: React.RefObject<HTMLAudioElement | n
     audio.addEventListener('ended', onAudioChange);
     audio.addEventListener('timeupdate', onAudioChange);
     audio.addEventListener('durationchange', onAudioChange);
+    audio.addEventListener('volumechange', onAudioChange);
     audio.addEventListener('error', onError);
     document.addEventListener('pointerdown', onUserGesture, { passive: true });
 
@@ -244,10 +252,11 @@ export function useRemotePlayback(audioRef: React.RefObject<HTMLAudioElement | n
       audio.removeEventListener('ended', onAudioChange);
       audio.removeEventListener('timeupdate', onAudioChange);
       audio.removeEventListener('durationchange', onAudioChange);
+      audio.removeEventListener('volumechange', onAudioChange);
       audio.removeEventListener('error', onError);
       document.removeEventListener('pointerdown', onUserGesture);
     };
   }, [audioRef, sessionId, updateState, requestPlayback]);
 
-  return { playerState, togglePlayback, seekTo, isAutoplayBlocked, resumePlayback: requestPlayback };
+  return { playerState, togglePlayback, seekTo, setVolume, isAutoplayBlocked, resumePlayback: requestPlayback };
 }
