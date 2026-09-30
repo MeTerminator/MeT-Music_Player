@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import type { PlayerState } from '../model/types';
 
-export function useMediaSession(audioRef: React.RefObject<HTMLAudioElement | null>, state: PlayerState): void {
+export function useMediaSession(audioRef: React.RefObject<HTMLAudioElement | null>, state: PlayerState, requestPlayback: () => void): void {
   const { songName, songSinger, songAlbum, songCoverUrl, isPlaying, progressValue, progressMax } = state;
 
   useEffect(() => {
@@ -26,13 +26,13 @@ export function useMediaSession(audioRef: React.RefObject<HTMLAudioElement | nul
     const setHandler = (action: MediaSessionAction, handler: MediaSessionActionHandler | null) => {
       try { mediaSession.setActionHandler(action, handler); } catch { /* Browser does not support this action. */ }
     };
-    setHandler('play', () => { void audio.play().catch(error => console.warn('播放失败', error)); });
+    setHandler('play', requestPlayback);
     setHandler('pause', () => audio.pause());
     setHandler('seekbackward', details => { audio.currentTime = Math.max(0, audio.currentTime - (details.seekOffset ?? 10)); });
     setHandler('seekforward', details => { audio.currentTime = Math.min(audio.duration, audio.currentTime + (details.seekOffset ?? 10)); });
     setHandler('seekto', details => { if (details.seekTime !== undefined) audio.currentTime = details.seekTime; });
     return () => actions.forEach(action => setHandler(action, null));
-  }, [audioRef]);
+  }, [audioRef, requestPlayback]);
 
   useEffect(() => {
     if (!Number.isFinite(progressMax) || progressMax <= 0 || progressMax === 100) return;

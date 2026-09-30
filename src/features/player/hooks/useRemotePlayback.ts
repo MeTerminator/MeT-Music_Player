@@ -11,6 +11,7 @@ const SYNC_TOLERANCE_SECONDS = 0.5;
 
 export function useRemotePlayback(audioRef: React.RefObject<HTMLAudioElement | null>, sessionId: string) {
   const [playerState, setPlayerState] = useState<PlayerState>(initialPlayerState);
+  const [isAutoplayBlocked, setIsAutoplayBlocked] = useState(false);
   const stateRef = useRef(playerState);
   const wsRef = useRef<WebSocket | null>(null);
   const syncRef = useRef({ startTime: 0, serverOffset: 0, playing: false, pendingSeek: false });
@@ -21,12 +22,25 @@ export function useRemotePlayback(audioRef: React.RefObject<HTMLAudioElement | n
     setPlayerState(next);
   }, []);
 
+  const requestPlayback = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    void audio.play().then(() => {
+      setIsAutoplayBlocked(false);
+    }).catch((error: unknown) => {
+      if (error instanceof Error && error.name === 'NotAllowedError') {
+        setIsAutoplayBlocked(true);
+      }
+      console.warn('播放失败', error);
+    });
+  }, [audioRef]);
+
   const togglePlayback = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    if (audio.paused) void audio.play().catch(error => console.warn('播放失败', error));
+    if (audio.paused) requestPlayback();
     else if (!stateRef.current.alwaysPlaying) audio.pause();
-  }, [audioRef]);
+  }, [audioRef, requestPlayback]);
 
   const seekTo = useCallback((seconds: number) => {
     const audio = audioRef.current;
@@ -128,14 +142,14 @@ export function useRemotePlayback(audioRef: React.RefObject<HTMLAudioElement | n
 
     const onCanPlay = () => {
       if (syncRef.current.pendingSeek) seekToServerTime();
-      if (syncRef.current.playing) void audio.play().catch(error => console.warn('自动播放失败', error));
+      if (syncRef.current.playing) requestPlayback();
       publishAudio(false);
     };
     const onWaiting = () => publishAudio(true);
     const onAudioChange = () => publishAudio();
     const onUserGesture = () => {
       if (syncRef.current.playing && audio.paused && audio.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-        void audio.play().catch(error => console.warn('播放失败', error));
+        requestPlayback();
       }
     };
     const onError = () => {
@@ -196,7 +210,7 @@ export function useRemotePlayback(audioRef: React.RefObject<HTMLAudioElement | n
               if (Math.abs(audio.currentTime - expected) > SYNC_TOLERANCE_SECONDS) seekToServerTime();
             } else if (audio.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
               seekToServerTime();
-              void audio.play().catch(error => console.warn('自动播放失败', error));
+              requestPlayback();
             }
           }
         } catch (error) { console.warn('WebSocket 消息解析失败', error); }
@@ -233,7 +247,7 @@ export function useRemotePlayback(audioRef: React.RefObject<HTMLAudioElement | n
       audio.removeEventListener('error', onError);
       document.removeEventListener('pointerdown', onUserGesture);
     };
-  }, [audioRef, sessionId, updateState]);
+  }, [audioRef, sessionId, updateState, requestPlayback]);
 
-  return { playerState, togglePlayback, seekTo };
+  return { playerState, togglePlayback, seekTo, isAutoplayBlocked, resumePlayback: requestPlayback };
 }

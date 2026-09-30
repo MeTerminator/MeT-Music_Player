@@ -4,6 +4,7 @@ import Lyrics from './components/Lyrics/Lyrics';
 import SongInfo from './components/SongInfo/SongInfo';
 import LyricsShadow from './components/LyricsShadow/LyricsShadow';
 import PlaceholderText from './components/PlaceholderText/PlaceholderText';
+import AutoplayOverlay from './components/AutoplayOverlay/AutoplayOverlay';
 import './Player.css';
 
 export default function Player() {
@@ -19,6 +20,7 @@ export default function Player() {
         </div>
         <SongInfo />
       </div>
+      <AutoplayOverlay />
     </main>
   );
 }

@@ -5,6 +5,8 @@ export interface PlayerContextValue {
   playerState: PlayerState;
   audioDataArrayRef: RefObject<Uint8Array<ArrayBuffer> | null>;
   togglePlayback: () => void;
+  isAutoplayBlocked: boolean;
+  resumePlayback: () => void;
   seekTo: (seconds: number) => void;
 }
 
