@@ -1,0 +1,12 @@
+:root { font-family: system-ui, sans-serif; color-scheme: light; }
+* { box-sizing: border-box; }
+body { min-height: 100vh; margin: 0; padding: 24px; display: grid; place-items: center; background: #f4f4f9; }
+.settings-card { width: min(100%, 540px); padding: 32px; border-radius: 12px; background: white; box-shadow: 0 8px 32px #0001; }
+h1 { margin-top: 0; }
+form { display: grid; gap: 12px; margin: 24px 0; }
+label { font-weight: 600; }
+input, button { min-height: 44px; padding: 10px 12px; border-radius: 6px; font: inherit; }
+input { border: 1px solid #aaa; width: 100%; }
+button { border: 0; color: white; background: #2766d3; cursor: pointer; }
+button:hover { background: #1d53b1; }
+a { color: #1856bd; }
