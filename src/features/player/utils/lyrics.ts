@@ -51,6 +51,19 @@ export function lyricWordProgress(word: LyricWord, seconds: number): number {
   return Math.min(1, (seconds - word.time) / word.duration);
 }
 
+export function getLyricShadowWord(line: LyricLine | undefined): string {
+  if (!line) return '';
+  let longest: LyricWord | undefined;
+  for (const word of line.words ?? []) {
+    if (!/[\p{L}\p{N}]/u.test(word.text)) continue;
+    // 相同时长保留歌词中先出现的词。
+    if (!longest || word.duration > longest.duration) longest = word;
+  }
+  // LRC 没有逐字时间，取第一个有效词（中文等文字取第一个字）。
+  const text = longest?.text.trim() ?? line.text.match(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]|[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*/u)?.[0] ?? '';
+  return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+}
+
 export function parseLrc(lrc: string): LyricLine[] {
   const result: LyricLine[] = [];
   for (const line of lrc.split(/\r?\n/)) {

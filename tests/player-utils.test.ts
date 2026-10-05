@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { decodeServerMessage } from '../src/features/player/model/protocol.ts';
-import { currentLyric, lyricWordProgress, parseLrc, parseLyrics, parseQrc } from '../src/features/player/utils/lyrics.ts';
+import { currentLyric, getLyricShadowWord, lyricWordProgress, parseLrc, parseLyrics, parseQrc } from '../src/features/player/utils/lyrics.ts';
 import { formatTime } from '../src/features/player/utils/time.ts';
 
 test('LRC timestamps and current line', () => {
@@ -93,4 +93,20 @@ test('word progress clamps and follows backward seeks and zero duration', () => 
   assert.equal(lyricWordProgress(word, 10.5), 0.25);
   assert.equal(lyricWordProgress({ ...word, duration: 0 }, 9), 0);
   assert.equal(lyricWordProgress({ ...word, duration: 0 }, 10), 1);
+});
+
+test('shadow chooses longest timed word rather than longest text or emotional keyword', () => {
+  const [line] = parseQrc('[1000,5000]love (1000,100)extraordinary (1100,200)oh (1300,1000) (2300,2000)!(4300,1500)');
+  assert.equal(getLyricShadowWord(line), 'Oh');
+  const [chinese] = parseQrc('[1000,2000]我(1000,100)爱(1100,1200)你(2300,700)');
+  assert.equal(getLyricShadowWord(chinese), '爱');
+  const [tie] = parseQrc('[1000,2000]first (1000,1000)second(2000,1000)');
+  assert.equal(getLyricShadowWord(tie), 'First');
+});
+
+test('shadow handles LRC, punctuation-only lyrics and absent lines', () => {
+  assert.equal(getLyricShadowWord(parseLrc('[00:01]hello world')[0]), 'Hello');
+  assert.equal(getLyricShadowWord(parseLrc('[00:01]你好世界')[0]), '你');
+  assert.equal(getLyricShadowWord(parseQrc('[1000,100]!(1000,100)')[0]), '');
+  assert.equal(getLyricShadowWord(undefined), '');
 });

@@ -8,7 +8,14 @@
 }
 
 .lyrics-shadow-container {
-    font-size: 18em;
+    position: fixed;
+    inset: 3vh 4vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    contain: size layout paint;
+    pointer-events: none;
+    font-size: min(18em, 40dvh);
     z-index: 100;
     font-family: var(--lyrics-font);
     font-weight: bold;
@@ -19,24 +26,12 @@
     overflow: hidden;
 }
 
+.lyrics-shadow {
+    flex: none;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
 .lyrics-shadow-container[data-visible='true'] {
     animation: fadeIn 0.5s ease-out forwards;
-}
-
-@media (max-width: 1200px) or (max-height: 800px) {
-    .lyrics-shadow-container {
-        font-size: 16em;
-    }
-}
-
-@media (max-width: 1000px) {
-    .lyrics-shadow-container {
-        font-size: 10em;
-    }
-}
-
-@media (max-width: 800px) {
-    .lyrics-shadow-container {
-        font-size: 8em;
-    }
 }
