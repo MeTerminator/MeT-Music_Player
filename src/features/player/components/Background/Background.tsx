@@ -1,30 +1,25 @@
+import { BackgroundRender, MeshGradientRenderer } from '@applemusic-like-lyrics/react';
 import { usePlayer } from '../../context/PlayerContext';
 import './Background.css';
 
 function Background() {
     const { playerState } = usePlayer();
-    const { isPlaying, songCoverUrl } = playerState;
-
-    const backgraoundTopStyle: React.CSSProperties = {};
-
-    if (isPlaying && songCoverUrl) {
-        backgraoundTopStyle.backgroundColor = `transparent`;
-    } else {
-        backgraoundTopStyle.backgroundColor = `#000000`;
-    }
+    const { isPlaying, songCoverUrl, songLyricsLines } = playerState;
+    const visible = isPlaying && !!songCoverUrl;
 
     return (
-        <>
-            <div
-                className="backgraound-top-layer"
-                style={backgraoundTopStyle}
-            ></div>
-            <div
-                className="background-layer"
-                style={{ backgroundImage: `url(${songCoverUrl})` }}
-            >
-            </div>
-        </>
+        <div className="background-layer" aria-hidden="true">
+            <BackgroundRender
+                className="background-render"
+                style={{ display: 'block' }}
+                data-visible={visible}
+                album={songCoverUrl || undefined}
+                renderer={MeshGradientRenderer}
+                playing={visible}
+                hasLyric={songLyricsLines.length > 0}
+                fps={30}
+            />
+        </div>
     );
 }
 

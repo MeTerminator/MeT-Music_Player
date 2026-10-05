@@ -16,4 +16,13 @@ export default defineConfig([
     plugins: { 'react-refresh': reactRefresh },
     rules: { 'react-refresh/only-export-components': ['warn', { allowConstantExport: true }] },
   },
+  {
+    // Preserve upstream signatures and generic helpers in the copied AMLL source.
+    files: ['src/vendor/amll/lyric-player/**/*.ts', 'src/vendor/amll/utils/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-explicit-any': 'off',
+      'no-irregular-whitespace': ['error', { skipComments: true }],
+    },
+  },
 ]);

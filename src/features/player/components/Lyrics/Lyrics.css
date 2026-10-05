@@ -1,287 +1,36 @@
-/* --- 歌词容器样式 --- */
 .lyrics-container {
+    position: fixed;
+    inset: 0;
     width: 100vw;
-    margin: 0 auto;
-    text-align: center;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    height: 100dvh;
     z-index: 1000;
     overflow: hidden;
+    visibility: hidden;
+    pointer-events: none;
 }
 
-/* --- 歌词文本框样式 --- */
-.lyrics {
+.lyrics-container[data-playing='true'] {
+    visibility: visible;
+}
+
+.focus-lyric-player.amll-lyric-player {
+    /* Individual row sizes are measured by the local AMLL focus player. */
+    --amll-lp-font-size: 16px;
+    --amll-lp-line-width-aspect: 0.9;
+    --amll-lp-line-padding-x: 5vw;
     font-family: var(--lyrics-font);
-    font-size: 8em;
     font-weight: bold;
-    color: #fff;
-    background: linear-gradient(to bottom left,
-            rgba(255, 255, 255, 0.7),
-            rgba(255, 255, 255, 0.5));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    display: inline-block;
-    transition: none;
-    /* 保留原文换行，自动换行时均衡长度，并遵循标点禁则。 */
-    white-space: pre-wrap;
-    text-wrap: balance;
-    word-break: normal;
-    line-break: strict;
-    overflow-wrap: anywhere;
-    line-height: 1.2;
-    position: absolute;
-    width: 80%;
+    position: relative;
+    box-sizing: border-box;
     text-align: center;
-    opacity: 0;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    overflow: hidden;
-    scrollbar-width: none;
-}
-
-.lyric-word {
-    --word-progress: 0%;
-    background: linear-gradient(to right,
-            var(--lyric-highlight) 0%,
-            var(--lyric-highlight) var(--word-progress),
-            var(--lyric-muted) var(--word-progress),
-            var(--lyric-muted) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    -webkit-box-decoration-break: clone;
-    box-decoration-break: clone;
-}
-
-@media (max-width: 1200px) or (max-height: 800px) {
-    .lyrics {
-        font-size: 6em;
-    }
-}
-
-@media (max-width: 1000px) {
-    .lyrics {
-        font-size: 4em;
-    }
-}
-
-@media (max-width: 800px) {
-    .lyrics {
-        font-size: 3em;
-    }
-}
-
-/* ---------------------------------------------------- */
-/* 动画 0: 缩放、模糊淡入 / 缩放、模糊淡出 */
-/* ---------------------------------------------------- */
-
-/* 进入动画 0: 从小、模糊淡入 */
-.lyrics-enter-0 {
-    animation: lyrics-enter-0 0.6s ease-in-out forwards;
-}
-
-@keyframes lyrics-enter-0 {
-    from {
-        opacity: 0;
-        filter: blur(20px);
-        transform: translate(-50%, -50%) scale(0.4);
-    }
-
-    to {
-        opacity: 1;
-        filter: blur(0);
-        transform: translate(-50%, -50%) scale(1);
-    }
-}
-
-/* 退出动画 0: 缩放、模糊淡出 */
-.lyrics-exit-0 {
-    animation: lyrics-exit-0 0.6s ease-in-out forwards;
-}
-
-@keyframes lyrics-exit-0 {
-    from {
-        opacity: 1;
-        filter: blur(0);
-        transform: translate(-50%, -50%) scale(1);
-    }
-
-    to {
-        opacity: 0;
-        filter: blur(20px);
-        transform: translate(-50%, -50%) scale(0.4);
-    }
-}
-
-/* ---------------------------------------------------- */
-/* 动画 1: 拉伸、旋转淡入 / 收缩、旋转淡出 */
-/* ---------------------------------------------------- */
-
-/* 进入动画 1: 从拉伸、旋转淡入 */
-.lyrics-enter-1 {
-    animation: lyrics-enter-1 0.6s cubic-bezier(0.54, 0.02, 0.27, 1.08) forwards;
-}
-
-@keyframes lyrics-enter-1 {
-    from {
-        opacity: 0;
-        filter: blur(10px);
-        transform: translate(-50%, -50%) scaleX(1.7) rotate(5deg);
-    }
-
-    to {
-        opacity: 1;
-        filter: blur(0);
-        transform: translate(-50%, -50%) scaleX(1) rotate(0deg);
-    }
-}
-
-/* 退出动画 1: 拉伸、旋转淡出 */
-.lyrics-exit-1 {
-    animation: lyrics-exit-1 0.6s cubic-bezier(0.54, 0.02, 0.27, 1.08) forwards;
-}
-
-@keyframes lyrics-exit-1 {
-    from {
-        opacity: 1;
-        filter: blur(0);
-        transform: translate(-50%, -50%) scaleX(1) rotate(0deg);
-    }
-
-    to {
-        opacity: 0;
-        filter: blur(10px);
-        transform: translate(-50%, -50%) scaleX(0.5) rotate(-5deg);
-    }
-}
-
-
-/* ---------------------------------------------------- */
-/* 动画 2: 反向旋转淡入 / 旋转淡出 */
-/* ---------------------------------------------------- */
-
-/* 进入动画 2: 从反向旋转淡入 */
-.lyrics-enter-2 {
-    animation: lyrics-enter-2 0.6s ease-in-out forwards;
-}
-
-@keyframes lyrics-enter-2 {
-    from {
-        opacity: 0;
-        filter: blur(10px);
-        transform: translate(-50%, -50%) rotate(-5deg);
-    }
-
-    to {
-        opacity: 1;
-        filter: blur(0);
-        transform: translate(-50%, -50%) rotate(0deg);
-    }
-}
-
-/* 退出动画 2: 旋转淡出 */
-.lyrics-exit-2 {
-    animation: lyrics-exit-2 0.6s ease-in-out forwards;
-}
-
-@keyframes lyrics-exit-2 {
-    from {
-        opacity: 1;
-        filter: blur(0);
-        transform: translate(-50%, -50%) rotate(0deg);
-    }
-
-    to {
-        opacity: 0;
-        filter: blur(10px);
-        transform: translate(-50%, -50%) rotate(5deg);
-    }
-}
-
-/* ---------------------------------------------------- */
-/* 动画 3: 正向旋转淡入 / 反向旋转淡出 */
-/* ---------------------------------------------------- */
-
-/* 进入动画 3: 从正向旋转淡入 */
-.lyrics-enter-3 {
-    animation: lyrics-enter-3 0.6s ease-in-out forwards;
-}
-
-@keyframes lyrics-enter-3 {
-    from {
-        opacity: 0;
-        filter: blur(10px);
-        transform: translate(-50%, -50%) rotate(5deg);
-    }
-
-    to {
-        opacity: 1;
-        filter: blur(0);
-        transform: translate(-50%, -50%) rotate(0deg);
-    }
-}
-
-/* 退出动画 3: 反向旋转淡出 */
-.lyrics-exit-3 {
-    animation: lyrics-exit-3 0.6s ease-in-out forwards;
-}
-
-@keyframes lyrics-exit-3 {
-    from {
-        opacity: 1;
-        filter: blur(0);
-        transform: translate(-50%, -50%) rotate(0deg);
-    }
-
-    to {
-        opacity: 0;
-        filter: blur(10px);
-        transform: translate(-50%, -50%) rotate(-5deg);
-    }
-}
-
-/* ---------------------------------------------------- */
-/* 动画 4: 仅淡入 / 仅淡出 */
-/* ---------------------------------------------------- */
-
-/* 进入动画 4: 仅淡入 */
-.lyrics-enter-4 {
-    animation: lyrics-enter-4 0.6s ease-in-out forwards;
-}
-
-@keyframes lyrics-enter-4 {
-    from {
-        opacity: 0;
-        filter: blur(10px);
-        transform: translate(-50%, -50%);
-    }
-
-    to {
-        opacity: 1;
-        filter: blur(0);
-        transform: translate(-50%, -50%);
-    }
-}
-
-/* 退出动画 4: 仅淡出 */
-.lyrics-exit-4 {
-    animation: lyrics-exit-4 0.6s ease-in-out forwards;
-}
-
-@keyframes lyrics-exit-4 {
-    from {
-        opacity: 1;
-        filter: blur(0);
-        transform: translate(-50%, -50%);
-    }
-
-    to {
-        opacity: 0;
-        filter: blur(10px);
-        transform: translate(-50%, -50%);
-    }
+    pointer-events: none;
+    /* The central 62% is the lyric window; incoming rows can pass its edges
+       within this full-page render layer, with a gradual fade instead of a cut. */
+    --lyrics-edge-mask: linear-gradient(to bottom,
+        transparent 0%, rgba(0, 0, 0, 0.12) 9%,
+        rgba(0, 0, 0, 0.65) 19%, #000 27%,
+        #000 73%, rgba(0, 0, 0, 0.65) 81%,
+        rgba(0, 0, 0, 0.12) 91%, transparent 100%);
+    -webkit-mask-image: var(--lyrics-edge-mask);
+    mask-image: var(--lyrics-edge-mask);
 }

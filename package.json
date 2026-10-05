@@ -12,6 +12,9 @@
     "test": "node --test tests/*.test.ts"
   },
   "dependencies": {
+    "@applemusic-like-lyrics/react": "^0.6.0",
+    "@ungap/structured-clone": "^1.4.0",
+    "bezier-easing": "^3.1.0",
     "colorthief": "^2.6.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
@@ -23,6 +26,7 @@
     "@types/node": "^26.6.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@types/ungap__structured-clone": "^1.2.0",
     "@vitejs/plugin-react": "^5.1.4",
     "eslint": "^9.39.3",
     "eslint-plugin-react-hooks": "^5.2.0",
