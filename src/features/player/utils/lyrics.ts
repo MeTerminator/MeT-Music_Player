@@ -2,7 +2,10 @@ import type { LyricLine, LyricWord } from '../model/types';
 
 // QRC 的字词时间为歌曲的绝对毫秒时间，不是相对行首的偏移。
 export function parseQrc(qrc: string): LyricLine[] {
-  const content = qrc.match(/LyricContent="([\s\S]*?)"/)?.[1]
+  // Like MeT-Music_UI's QRC extraction, stop at the XML wrapper rather than
+  // a quote inside the lyrics. API responses can contain unescaped quotes.
+  // Also allow whitespace, either attribute quote, and following XML attributes.
+  const content = qrc.match(/\bLyricContent\s*=\s*(["'])([\s\S]*?)\1(?=\s*(?:[\w:.-]+\s*=\s*(?:"[^"]*"|'[^']*')\s*)*\/?>)/)?.[2]
     ?? qrc.match(/<!\[CDATA\[([\s\S]*?)\]\]>/)?.[1] ?? qrc;
   const decoded = content.replace(/&(#x[\da-f]+|#\d+|quot|apos|lt|gt|amp);/gi, (entity, name: string) => {
     const entities: Record<string, string> = { quot: '"', apos: "'", lt: '<', gt: '>', amp: '&' };

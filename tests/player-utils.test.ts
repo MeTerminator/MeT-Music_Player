@@ -55,6 +55,35 @@ test('QRC takes priority and absent or unusable QRC falls back to LRC', () => {
   assert.deepEqual(parseLyrics({ qrc: '', lrc: null }), []);
 });
 
+test('QRC literal quotes do not truncate the XML attribute or following lines', () => {
+  const content = '[offset:0]\r\n[1000,1000]他说(1000,200)"别走"(1200,800)\r\n[2500,500]下一句(2500,500)';
+  const qrc = `<?xml version="1.0"?><QrcInfos><LyricInfo><Lyric_1 LyricType="1" LyricContent="${content}\r\n"/>\r\n</LyricInfo></QrcInfos>`;
+  const lines = parseQrc(qrc);
+  assert.deepEqual(lines, [
+    { time: 1, duration: 1, text: '他说"别走"', words: [
+      { text: '他说', time: 1, duration: 0.2 },
+      { text: '"别走"', time: 1.2, duration: 0.8 },
+    ] },
+    { time: 2.5, duration: 0.5, text: '下一句', words: [{ text: '下一句', time: 2.5, duration: 0.5 }] },
+  ]);
+  assert.deepEqual(parseLyrics({ qrc, lrc: '[00:01]fallback' }), lines);
+});
+
+test('QRC quoted text works in raw, CDATA, escaped XML and single-quoted attributes', () => {
+  const content = '[offset:100]\n[1000,1000]"Don\'t (1000,400)go"(1400,600)';
+  const expected = parseQrc(content);
+  assert.equal(expected[0].text, '"Don\'t go"');
+  assert.equal(expected[0].words?.[1].time, 1.5);
+  for (const qrc of [
+    `<QrcInfos><Lyric_1 LyricContent="${content}" /></QrcInfos>`,
+    `<QrcInfos><Lyric_1 LyricContent='${content}' /></QrcInfos>`,
+    `<QrcInfos><Lyric_1 LyricContent="${content.replaceAll('"', '&quot;').replaceAll("'", '&apos;')}" /></QrcInfos>`,
+    `<QrcInfos><Lyric_1 LyricContent="${content.replaceAll('"', '&#34;').replaceAll("'", '&#x27;')}" /></QrcInfos>`,
+    `<QrcInfos><Lyric_1><![CDATA[${content}]]></Lyric_1></QrcInfos>`,
+    `<QrcInfos><Lyric_1 LyricContent = "${content}" LyricType="1" /></QrcInfos>`,
+  ]) assert.deepEqual(parseQrc(qrc), expected);
+});
+
 test('word progress clamps and follows backward seeks and zero duration', () => {
   const word = { time: 10, duration: 2, text: '唱' };
   assert.equal(lyricWordProgress(word, 9), 0);
