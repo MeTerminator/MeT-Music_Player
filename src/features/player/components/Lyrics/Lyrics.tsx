@@ -1,20 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { usePlayer } from '../../context/PlayerContext';
 import './Lyrics.css';
 import { adjustColorBrightnessHSV, adjustColorBrightness, hexToRgbString } from '../../utils/color';
-
-// 检查是否全中文（用于换行）
-const shouldReplaceSpaceWithNewline = (str: string) => {
-    if (!str) return false;
-    // 允许中文、空格、全角符号
-    return /^[\u4e00-\u9fa5\s\uff01-\uff5e]*$/.test(str);
-};
-
-// 歌词处理函数
-const processLyricContent = (lyric: string) => {
-    if (!lyric) return '';
-    return shouldReplaceSpaceWithNewline(lyric) ? lyric.replace(/ /g, '\n') : lyric;
-};
 
 // 预定义的动画数量
 const ANIMATION_COUNT = 5;
@@ -44,24 +31,6 @@ function Lyrics() {
     // 引用存储
     const prevLyricsIndexRef = useRef(-1);
 
-    // 用于存储窗口宽度，并作为依赖项触发高度重新计算
-    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-
-    // 监听窗口大小变化
-    useEffect(() => {
-        const handleResize = () => {
-            // 只更新宽度，触发依赖于 windowWidth 的 useEffect
-            setWindowWidth(window.innerWidth);
-        };
-
-        window.addEventListener('resize', handleResize);
-
-        // 清理函数：在组件卸载时移除监听器
-        return () => {
-            window.removeEventListener('resize', handleResize);
-        };
-    }, []); // 仅在挂载和卸载时执行
-
     // --- 歌词和双文本框切换逻辑 ---
     useEffect(() => {
         const currentLyricsIndex = playerState.currentLyricsIndex;
@@ -80,7 +49,7 @@ function Lyrics() {
             const nextActiveBuffer = activeBuffer === 'buffer1' ? 'buffer2' : 'buffer1';
             exitingBufferId = activeBuffer;
 
-            const processedContent = processLyricContent(newLyric);
+            const processedContent = newLyric;
 
             // 将新歌词内容设置给即将进场的 buffer
             if (nextActiveBuffer === 'buffer1') {
@@ -121,33 +90,29 @@ function Lyrics() {
     }, [playerState.currentLyricsIndex, playerState.songLyricsLines, isPlaying, activeBuffer]);
 
 
-    // --- 动态设置父元素高度 (新增 windowWidth 依赖项) ---
-    useEffect(() => {
-        // 只有当正在播放歌词，并且至少有一个测量 Ref 已成功绑定时才执行
-        const isPlayingLyricsContent = isPlaying && (lyricText1 || lyricText2);
+    // 在绘制前同步高度；观察实际布局，覆盖宽高断点和字体加载引起的换行。
+    useLayoutEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
 
-        // **注意：** 即使没有歌词内容，当窗口大小变化时，也需要重新执行清理高度的逻辑，
-        // 所以我们让这个 effect 总是执行，但只在有内容时计算高度。
-
-        if (isPlayingLyricsContent && containerRef.current) {
-
-            // 获取两个 buffer 的实际高度，如果 ref 不存在则高度为 0
-            const height1 = lyricBuffer1Ref.current?.offsetHeight || 0;
-            const height2 = lyricBuffer2Ref.current?.offsetHeight || 0;
-
-            // 计算最大高度
-            const maxHeight = Math.max(height1, height2);
-
-            // 将最大高度应用给父元素
-            containerRef.current.style.height = `${maxHeight}px`;
-
-        } else if (containerRef.current && !isPlayingLyricsContent) {
-            // 当不播放歌词时，或窗口大小变化但无内容时，清除内联高度
-            containerRef.current.style.height = '';
+        if (!isPlaying || !(lyricText1 || lyricText2)) {
+            container.style.height = '';
+            return;
         }
 
-        // 依赖项：歌词内容变化 (lyricText1/lyricText2) 会触发重新渲染，从而更新 ref 的 offsetHeight
-    }, [isPlaying, lyricText1, lyricText2, windowWidth]);
+        const buffers = [lyricBuffer1Ref.current, lyricBuffer2Ref.current];
+        const updateHeight = () => {
+            const height = Math.max(...buffers.map(buffer => buffer?.offsetHeight ?? 0));
+            container.style.height = `${height}px`;
+        };
+
+        updateHeight();
+        const observer = new ResizeObserver(updateHeight);
+        buffers.forEach(buffer => {
+            if (buffer) observer.observe(buffer);
+        });
+        return () => observer.disconnect();
+    }, [isPlaying, lyricText1, lyricText2]);
 
 
     // --- 渲染逻辑 ---

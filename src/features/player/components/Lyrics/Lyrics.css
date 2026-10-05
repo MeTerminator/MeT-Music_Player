@@ -25,9 +25,14 @@
     color: transparent;
     display: inline-block;
     transition: none;
+    /* 保留原文换行，自动换行时均衡长度，并遵循标点禁则。 */
     white-space: pre-wrap;
+    text-wrap: balance;
+    word-break: normal;
+    line-break: strict;
+    overflow-wrap: anywhere;
+    line-height: 1.2;
     position: absolute;
-    left: 10%;
     width: 80%;
     text-align: center;
     opacity: 0;
