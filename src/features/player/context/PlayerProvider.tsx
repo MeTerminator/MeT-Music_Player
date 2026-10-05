@@ -11,7 +11,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const { playerState, togglePlayback, seekTo, setVolume, isAutoplayBlocked, resumePlayback } = useRemotePlayback(audioRef, sessionId);
   const audioDataArrayRef = useAudioAnalyser(audioRef);
   useMediaSession(audioRef, playerState, resumePlayback);
-  const value = useMemo(() => ({ playerState, audioDataArrayRef, togglePlayback, seekTo, setVolume, isAutoplayBlocked, resumePlayback }), [playerState, audioDataArrayRef, togglePlayback, seekTo, setVolume, isAutoplayBlocked, resumePlayback]);
+  const value = useMemo(() => ({ playerState, audioRef, audioDataArrayRef, togglePlayback, seekTo, setVolume, isAutoplayBlocked, resumePlayback }), [playerState, audioDataArrayRef, togglePlayback, seekTo, setVolume, isAutoplayBlocked, resumePlayback]);
 
   return (
     <PlayerContext.Provider value={value}>

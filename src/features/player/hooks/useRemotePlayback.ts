@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getCoverColors, getLyrics, getSong } from '../api/song';
 import { initialPlayerState, type PlayerState } from '../model/types';
 import { decodeServerMessage } from '../model/protocol';
-import { currentLyric, parseLrc } from '../utils/lyrics';
+import { currentLyric } from '../utils/lyrics';
 import { formatTime } from '../utils/time';
 
 const WS_URL = 'wss://music.met6.top:444/api/ws/client';
@@ -130,9 +130,9 @@ export function useRemotePlayback(audioRef: React.RefObject<HTMLAudioElement | n
         audio.src = song.url;
         audio.load();
 
-        void getLyrics(mid, signal).then(text => {
+        void getLyrics(mid, signal).then(lines => {
           if (disposed || version !== trackVersion) return;
-          lyrics = parseLrc(text);
+          lyrics = lines;
           updateState({ songLyricsLines: lyrics });
           publishAudio();
         }).catch(error => { if (!signal.aborted) console.warn('获取歌词失败', error); });
@@ -153,7 +153,21 @@ export function useRemotePlayback(audioRef: React.RefObject<HTMLAudioElement | n
       publishAudio(false);
     };
     const onWaiting = () => publishAudio(true);
-    const onAudioChange = () => publishAudio();
+    // QRC 行切换按帧检查，只在行变化时发布状态，避免 timeupdate 的低频延迟。
+    let lyricFrame = 0;
+    const tickLyrics = () => {
+      lyricFrame = 0;
+      if (audio.paused || audio.ended) return;
+      if (currentLyric(lyrics, audio.currentTime) !== stateRef.current.currentLyricsIndex) publishAudio();
+      lyricFrame = requestAnimationFrame(tickLyrics);
+    };
+    const onAudioChange = () => {
+      publishAudio();
+      if (audio.paused || audio.ended) {
+        cancelAnimationFrame(lyricFrame);
+        lyricFrame = 0;
+      } else if (!lyricFrame) lyricFrame = requestAnimationFrame(tickLyrics);
+    };
     const onUserGesture = () => {
       if (syncRef.current.playing && audio.paused && audio.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
         requestPlayback();
@@ -169,6 +183,7 @@ export function useRemotePlayback(audioRef: React.RefObject<HTMLAudioElement | n
     audio.addEventListener('pause', onAudioChange);
     audio.addEventListener('ended', onAudioChange);
     audio.addEventListener('timeupdate', onAudioChange);
+    audio.addEventListener('seeked', onAudioChange);
     audio.addEventListener('durationchange', onAudioChange);
     audio.addEventListener('volumechange', onAudioChange);
     audio.addEventListener('error', onError);
@@ -236,6 +251,7 @@ export function useRemotePlayback(audioRef: React.RefObject<HTMLAudioElement | n
 
     return () => {
       disposed = true;
+      cancelAnimationFrame(lyricFrame);
       trackVersion++;
       trackController?.abort();
       if (reconnectTimer) clearTimeout(reconnectTimer);
@@ -251,6 +267,7 @@ export function useRemotePlayback(audioRef: React.RefObject<HTMLAudioElement | n
       audio.removeEventListener('pause', onAudioChange);
       audio.removeEventListener('ended', onAudioChange);
       audio.removeEventListener('timeupdate', onAudioChange);
+      audio.removeEventListener('seeked', onAudioChange);
       audio.removeEventListener('durationchange', onAudioChange);
       audio.removeEventListener('volumechange', onAudioChange);
       audio.removeEventListener('error', onError);

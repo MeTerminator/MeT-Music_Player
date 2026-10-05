@@ -3,6 +3,7 @@ import type { PlayerState } from '../model/types';
 
 export interface PlayerContextValue {
   playerState: PlayerState;
+  audioRef: RefObject<HTMLAudioElement | null>;
   audioDataArrayRef: RefObject<Uint8Array<ArrayBuffer> | null>;
   togglePlayback: () => void;
   isAutoplayBlocked: boolean;

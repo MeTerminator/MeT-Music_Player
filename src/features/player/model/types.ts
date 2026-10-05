@@ -1,6 +1,14 @@
+export interface LyricWord {
+  time: number;
+  duration: number;
+  text: string;
+}
+
 export interface LyricLine {
   time: number;
   text: string;
+  duration?: number;
+  words?: LyricWord[];
 }
 
 export interface TrackInfo {

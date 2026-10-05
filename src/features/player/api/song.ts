@@ -1,10 +1,11 @@
 import ColorThief from 'colorthief';
-import type { CoverColors, SongData } from '../model/types';
+import type { CoverColors, LyricLine, SongData } from '../model/types';
+import { parseLyrics } from '../utils/lyrics';
 
 const API_ROOT = 'https://music.met6.top:444';
 const emptyColors: CoverColors = { dominant_color: '', palette: [] };
 const songCache = new Map<string, SongData>();
-const lyricsCache = new Map<string, string>();
+const lyricsCache = new Map<string, LyricLine[]>();
 const colorCache = new Map<string, CoverColors>();
 
 export async function getSong(mid: string, signal?: AbortSignal): Promise<SongData> {
@@ -20,12 +21,13 @@ export async function getSong(mid: string, signal?: AbortSignal): Promise<SongDa
   return song;
 }
 
-export async function getLyrics(mid: string, signal?: AbortSignal): Promise<string> {
+export async function getLyrics(mid: string, signal?: AbortSignal): Promise<LyricLine[]> {
   const cached = lyricsCache.get(mid);
   if (cached !== undefined) return cached;
-  const response = await fetch(`${API_ROOT}/api/v1/lrc?mid=${encodeURIComponent(mid)}`, { signal });
+  const response = await fetch(`${API_ROOT}/api/web/lyric/new?id=${encodeURIComponent(mid)}`, { signal });
   if (!response.ok) throw new Error(`歌词请求失败: ${response.status}`);
-  const lyrics = await response.text();
+  const body: unknown = await response.json();
+  const lyrics = parseLyrics(body);
   lyricsCache.set(mid, lyrics);
   return lyrics;
 }

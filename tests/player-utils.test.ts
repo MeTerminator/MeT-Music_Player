@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { decodeServerMessage } from '../src/features/player/model/protocol.ts';
-import { currentLyric, parseLrc } from '../src/features/player/utils/lyrics.ts';
+import { currentLyric, lyricWordProgress, parseLrc, parseLyrics, parseQrc } from '../src/features/player/utils/lyrics.ts';
 import { formatTime } from '../src/features/player/utils/time.ts';
 
 test('LRC timestamps and current line', () => {
@@ -26,4 +26,42 @@ test('server messages reject malformed feedback', () => {
     type: 'feedback', SessionId: 'a',
     data: { event: 'play', status: undefined, songMid: 'm', systemTime: 1000, currentTime: 1 },
   });
+});
+
+test('QRC XML preserves words, spaces, punctuation and absolute timing', () => {
+  const lines = parseQrc('<?xml version="1.0"?><QrcInfos><Lyric_1 LyricContent="[offset:100]\n[1000,1200]你(1000,400)好(1400,400)！(1800,0)\n[3000,900]Hello (3000,400)&amp; world(3400,500)"/></QrcInfos>');
+  assert.deepEqual(lines[0], {
+    time: 1.1, duration: 1.2, text: '你好！',
+    words: [
+      { time: 1.1, duration: 0.4, text: '你' },
+      { time: 1.5, duration: 0.4, text: '好' },
+      { time: 1.9, duration: 0, text: '！' },
+    ],
+  });
+  assert.equal(lines[1].text, 'Hello & world');
+  assert.equal(lines[1].words?.[1].time, 3.5);
+  assert.equal(currentLyric(lines, 0.9), -1);
+  assert.equal(currentLyric(lines, 1.1), 0);
+});
+
+test('QRC takes priority and absent or unusable QRC falls back to LRC', () => {
+  const lrc = '[00:01.00]普通歌词';
+  const qrc = '[1000,1000]逐(1000,500)字(1500,500)';
+  assert.equal(parseLyrics({ qrc, lrc })[0].text, '逐字');
+  for (const missing of [undefined, null, '', 'broken', '[1000,1000]no word timing']) {
+    assert.deepEqual(parseLyrics({ qrc: missing, lrc }), parseLrc(lrc));
+  }
+  assert.deepEqual(parseLyrics(null), []);
+  assert.deepEqual(parseLyrics({ qrc: '', lrc: null }), []);
+});
+
+test('word progress clamps and follows backward seeks and zero duration', () => {
+  const word = { time: 10, duration: 2, text: '唱' };
+  assert.equal(lyricWordProgress(word, 9), 0);
+  assert.equal(lyricWordProgress(word, 10), 0);
+  assert.equal(lyricWordProgress(word, 11), 0.5);
+  assert.equal(lyricWordProgress(word, 20), 1);
+  assert.equal(lyricWordProgress(word, 10.5), 0.25);
+  assert.equal(lyricWordProgress({ ...word, duration: 0 }, 9), 0);
+  assert.equal(lyricWordProgress({ ...word, duration: 0 }, 10), 1);
 });

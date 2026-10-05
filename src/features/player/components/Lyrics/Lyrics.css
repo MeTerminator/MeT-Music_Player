@@ -43,6 +43,20 @@
     scrollbar-width: none;
 }
 
+.lyric-word {
+    --word-progress: 0%;
+    background: linear-gradient(to right,
+            var(--lyric-highlight) 0%,
+            var(--lyric-highlight) var(--word-progress),
+            var(--lyric-muted) var(--word-progress),
+            var(--lyric-muted) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+}
+
 @media (max-width: 1200px) or (max-height: 800px) {
     .lyrics {
         font-size: 6em;
