@@ -8,6 +8,10 @@ const songCache = new Map<string, SongData>();
 const lyricsCache = new Map<string, LyricLine[]>();
 const colorCache = new Map<string, CoverColors>();
 
+export function getCoverImageUrl(pmid: string): string {
+  return pmid ? `${API_ROOT}/api/web/album/cover/pic?pic=T002R300x300M000${encodeURIComponent(pmid)}.jpg` : '';
+}
+
 export async function getSong(mid: string, signal?: AbortSignal): Promise<SongData> {
   const cached = songCache.get(mid);
   if (cached) return cached;
@@ -50,7 +54,7 @@ export async function getCoverColors(pmid: string): Promise<CoverColors> {
       } catch (error) { reject(error); }
     };
     image.onerror = () => reject(new Error('封面图片加载失败'));
-    image.src = `${API_ROOT}/api/web/album/cover/pic?pic=T002R300x300M000${encodeURIComponent(pmid)}.jpg`;
+    image.src = getCoverImageUrl(pmid);
   });
   colorCache.set(pmid, colors);
   return colors;
