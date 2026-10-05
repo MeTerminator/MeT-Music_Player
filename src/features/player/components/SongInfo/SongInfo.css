@@ -1,6 +1,5 @@
-.song-container {
-  width: min(90vw, 780px);
-  margin: 0 auto;
+.song-container,
+.volume-panel {
   color: rgba(255, 255, 255, 0.94);
   background: rgba(0, 0, 0, 0.38);
   border: 1px solid rgba(255, 255, 255, 0.25);
@@ -8,12 +7,18 @@
   box-shadow: 5px 5px 20px rgba(0, 0, 0, 0.3);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
+}
+
+.song-container {
+  width: min(90vw, 780px);
+  margin: 0 auto;
   font-family: var(--ui-font);
   transition: opacity 0.5s ease-in-out;
 }
 
 .song-container.hidden {
   opacity: 0;
+  pointer-events: none;
 }
 
 .song-container-box {
@@ -88,49 +93,117 @@
 
 .volume-control {
   position: relative;
-  display: flex;
   flex: none;
-  align-items: center;
-  height: 32px;
   color: rgba(255, 255, 255, 0.85);
 }
 
 .volume-icon {
   display: grid;
-  flex: none;
-  width: 24px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font: inherit;
   font-size: 21px;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.volume-icon:hover,
+.volume-control[data-open='true'] .volume-icon {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.volume-icon:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 3px;
+}
+
+.volume-panel {
+  position: absolute;
+  right: -8px;
+  bottom: calc(100% + 10px);
+  z-index: 10;
+  box-sizing: border-box;
+  width: 176px;
+  padding: 12px 14px 8px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1), visibility 180ms;
+}
+
+/* 连通图标和面板的悬停区域，鼠标经过间隙时不关闭。 */
+.volume-panel::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: 12px;
+}
+
+.volume-control[data-open='true'] .volume-panel {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.volume-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.volume-value {
+  color: #fff;
+  font-variant-numeric: tabular-nums;
 }
 
 .volume-slider {
   display: flex;
   align-items: center;
-  width: 0;
   height: 32px;
-  overflow: hidden;
-  opacity: 0;
-  pointer-events: none;
-  transition: width 0.2s ease, opacity 0.2s ease;
-}
-
-.volume-control:hover .volume-slider,
-.volume-control:focus-within .volume-slider {
-  width: 112px;
-  opacity: 1;
-  pointer-events: auto;
 }
 
 .volume-slider input {
   appearance: none;
   -webkit-appearance: none;
-  flex: none;
-  width: 96px;
-  height: 4px;
-  margin: 0 8px;
+  width: 100%;
+  height: 28px;
+  margin: 0;
   border-radius: 999px;
+  background: transparent;
   cursor: pointer;
+  touch-action: pan-y;
+}
+
+.volume-slider input::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(to right, #fff var(--volume-progress), rgba(255, 255, 255, 0.22) var(--volume-progress));
+}
+
+.volume-slider input::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.volume-slider input::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: #fff;
 }
 
 .volume-slider input::-webkit-slider-thumb {
@@ -138,9 +211,11 @@
   -webkit-appearance: none;
   width: 12px;
   height: 12px;
+  margin-top: -4px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  transition: box-shadow 160ms ease;
 }
 
 .volume-slider input::-moz-range-thumb {
@@ -149,30 +224,37 @@
   border: 0;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  transition: box-shadow 160ms ease;
 }
 
-.volume-value {
-  position: absolute;
-  bottom: calc(100% + 4px);
-  left: calc(50% + 12px);
-  transform: translateX(-50%);
-  padding: 3px 6px;
-  border-radius: 5px;
-  background: rgba(0, 0, 0, 0.78);
-  color: #fff;
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-  opacity: 0;
-  pointer-events: none;
-  white-space: nowrap;
-  transition: opacity 0.15s ease;
+.volume-slider input:hover::-webkit-slider-thumb,
+.volume-slider input:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.12);
 }
 
-.volume-slider:hover ~ .volume-value,
-.volume-control:focus-within .volume-value {
-  opacity: 1;
+.volume-slider input:hover::-moz-range-thumb,
+.volume-slider input:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.12);
+}
+
+.volume-slider input:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 3px;
+}
+
+@media (hover: none) {
+  .volume-icon {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .volume-panel,
+  .volume-icon {
+    transition: none;
+  }
 }
 
 .progress-ring {
@@ -194,7 +276,6 @@
   width: 100%;
   height: 100%;
   transform: rotate(-90deg);
-  transition: opacity 0.2s ease;
 }
 
 .progress-ring-track,
@@ -226,23 +307,11 @@
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   line-height: 1.15;
-  opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
 }
 
 .progress-time-total {
   opacity: 0.7;
-}
-
-.progress-ring:hover .progress-time,
-.progress-ring:focus-visible .progress-time {
-  opacity: 1;
-}
-
-.progress-ring:hover svg,
-.progress-ring:focus-visible svg {
-  opacity: 0;
 }
 
 @media (max-width: 560px), (max-height: 600px) {
@@ -272,29 +341,6 @@
   .progress-ring {
     width: 50px;
     height: 50px;
-  }
-
-  .volume-slider {
-    position: absolute;
-    right: 0;
-    bottom: 100%;
-    background: rgba(0, 0, 0, 0.78);
-    border-radius: 9px;
-  }
-
-  .volume-control:hover .volume-slider,
-  .volume-control:focus-within .volume-slider {
-    width: 100px;
-  }
-
-  .volume-slider input {
-    width: 80px;
-    margin: 0 10px;
-  }
-
-  .volume-value {
-    bottom: calc(100% + 36px);
-    left: -26px;
   }
 
   .progress-time {
