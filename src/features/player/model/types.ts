@@ -11,11 +11,14 @@ export interface LyricLine {
   words?: LyricWord[];
 }
 
+export type Platform = 'qq' | 'netease';
+export type SongSource = 'qqmusic' | 'netease' | 'local';
+
 export interface TrackInfo {
   mid?: string;
   title?: string;
   singer?: Array<{ name?: string; title?: string }>;
-  album?: { name?: string; pmid?: string };
+  album?: { name?: string; pmid?: string; picUrl?: string };
 }
 
 export interface SongData {
@@ -35,6 +38,7 @@ export interface PlayerState {
   isWsOpen: boolean;
   statusText: string;
   songMid: string;
+  songPlatform: Platform;
   songName: string;
   songSinger: string;
   songAlbum: string;
@@ -59,6 +63,7 @@ export const initialPlayerState: PlayerState = {
   isWsOpen: false,
   statusText: '未连接',
   songMid: '',
+  songPlatform: 'qq',
   songName: '',
   songSinger: '',
   songAlbum: '',
@@ -83,7 +88,8 @@ export interface FeedbackMessage {
   data: {
     event?: string;
     status?: boolean;
-    songMid?: string;
+    songMid?: string | null;
+    songSource?: SongSource;
     systemTime?: number;
     currentTime?: number;
   };

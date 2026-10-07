@@ -1,4 +1,4 @@
-import type { LyricLine, LyricWord } from '../model/types';
+import type { LyricLine, LyricWord, Platform } from '../model/types';
 
 // QRC 的字词时间为歌曲的绝对毫秒时间，不是相对行首的偏移。
 export function parseQrc(qrc: string): LyricLine[] {
@@ -37,10 +37,28 @@ export function parseQrc(qrc: string): LyricLine[] {
   return result.sort((a, b) => a.time - b.time);
 }
 
-export function parseLyrics(body: unknown): LyricLine[] {
+// 网易云 YRC 的词时间也是绝对毫秒时间，时间标记位于词前。
+export function parseYrc(yrc: string): LyricLine[] {
+  const result: LyricLine[] = [];
+  for (const raw of yrc.split(/\r?\n/)) {
+    const line = raw.match(/^\s*\[(\d+),(\d+)\](.*)$/);
+    if (!line) continue;
+    const words: LyricWord[] = [];
+    for (const word of line[3].matchAll(/\((\d+),(\d+),\d+\)(.*?)(?=\(\d+,\d+,\d+\)|$)/g)) {
+      if (word[3]) words.push({ time: Number(word[1]) / 1000, duration: Number(word[2]) / 1000, text: word[3] });
+    }
+    const text = words.map(word => word.text).join('');
+    if (text.trim()) result.push({ time: Number(line[1]) / 1000, duration: Number(line[2]) / 1000, text, words });
+  }
+  return result.sort((a, b) => a.time - b.time);
+}
+
+export function parseLyrics(body: unknown, platform: Platform = 'qq'): LyricLine[] {
   if (!body || typeof body !== 'object') return [];
-  const { qrc, lrc } = body as { qrc?: unknown; lrc?: unknown };
-  const lines = typeof qrc === 'string' ? parseQrc(qrc) : [];
+  const { qrc, lrc, yrc } = body as { qrc?: unknown; lrc?: unknown; yrc?: unknown };
+  const lines = platform === 'netease' && yrc !== undefined
+    ? (typeof yrc === 'string' ? parseYrc(yrc) : [])
+    : (typeof qrc === 'string' ? parseQrc(qrc) : []);
   if (lines.some(line => line.words?.length)) return lines;
   return typeof lrc === 'string' ? parseLrc(lrc) : [];
 }

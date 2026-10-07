@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { decodeServerMessage } from '../src/features/player/model/protocol.ts';
-import { currentLyric, getLyricShadowWord, lyricWordProgress, parseLrc, parseLyrics, parseQrc } from '../src/features/player/utils/lyrics.ts';
+import { currentLyric, getLyricShadowWord, lyricWordProgress, parseLrc, parseLyrics, parseQrc, parseYrc } from '../src/features/player/utils/lyrics.ts';
 import { formatTime } from '../src/features/player/utils/time.ts';
 
 test('LRC timestamps and current line', () => {
@@ -109,4 +109,42 @@ test('shadow handles LRC, punctuation-only lyrics and absent lines', () => {
   assert.equal(getLyricShadowWord(parseLrc('[00:01]你好世界')[0]), '你');
   assert.equal(getLyricShadowWord(parseQrc('[1000,100]!(1000,100)')[0]), '');
   assert.equal(getLyricShadowWord(undefined), '');
+});
+
+
+test('NetEase feedback accepts numeric IDs, retains source and accepts empty-room stops', () => {
+  const feedback = (data: unknown) => decodeServerMessage(JSON.stringify({ type: 'feedback', SessionId: 'room', data }));
+  assert.deepEqual(feedback({ songMid: 123, songSource: 'netease', status: true }), {
+    type: 'feedback', SessionId: 'room',
+    data: { event: undefined, status: true, songMid: '123', songSource: 'netease', systemTime: undefined, currentTime: undefined },
+  });
+  assert.equal(feedback({ songMid: null, status: false })?.type, 'feedback');
+  for (const songMid of [-1, 1.5, {}, [], true]) assert.equal(feedback({ songMid }), null);
+  for (const songSource of ['unknown', null, ['netease']]) assert.equal(feedback({ songSource }), null);
+});
+
+test('YRC preserves absolute word timing, spaces, punctuation and skips JSON metadata', () => {
+  const lines = parseYrc('{"t":0,"c":[{"tx":"作词"}]}\n[3000,1000](3000,1000,0)World!\n[1000,1200](1000,400,0)你(1400,400,0)好 (1800,400,0)！');
+  assert.deepEqual(lines[0], {
+    time: 1, duration: 1.2, text: '你好 ！', words: [
+      { time: 1, duration: 0.4, text: '你' },
+      { time: 1.4, duration: 0.4, text: '好 ' },
+      { time: 1.8, duration: 0.4, text: '！' },
+    ],
+  });
+  assert.equal(lines[1].text, 'World!');
+  assert.equal(currentLyric(lines, 0.9), -1);
+  assert.ok(Math.abs(lyricWordProgress(lines[0].words![1], 1.6) - 0.5) < 1e-9);
+});
+
+test('NetEase prefers native YRC, falls back to LRC and accepts legacy QRC only without YRC', () => {
+  const yrc = '[1000,500](1000,500,0)原生';
+  const qrc = '[1000,500]旧版(1000,500)';
+  const lrc = '[00:01]普通';
+  assert.deepEqual(parseLyrics({ yrc, qrc, lrc }, 'netease'), parseYrc(yrc));
+  for (const yrc of ['', null, 'broken', '[1000,500]no word timing']) {
+    assert.deepEqual(parseLyrics({ yrc, qrc, lrc }, 'netease'), parseLrc(lrc));
+  }
+  assert.deepEqual(parseLyrics({ qrc, lrc }, 'netease'), parseQrc(qrc));
+  assert.deepEqual(parseLyrics({ yrc, qrc, lrc }), parseQrc(qrc));
 });

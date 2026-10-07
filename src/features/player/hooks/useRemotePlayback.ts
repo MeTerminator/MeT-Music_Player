@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { getCoverColors, getLyrics, getSong } from '../api/song';
-import { initialPlayerState, type PlayerState } from '../model/types';
+import { getCoverColors, getCoverImageUrl, getLyrics, getSong } from '../api/song';
+import { initialPlayerState, type Platform, type PlayerState } from '../model/types';
 import { decodeServerMessage } from '../model/protocol';
 import { currentLyric } from '../utils/lyrics';
 import { formatTime } from '../utils/time';
@@ -63,7 +63,8 @@ export function useRemotePlayback(audioRef: React.RefObject<HTMLAudioElement | n
     let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
     let trackController: AbortController | undefined;
     let trackVersion = 0;
-    let loadedMid = '';
+    let loadedTrack = '';
+    let loadingTrack = '';
     let lastStartTime = 0;
     let lyrics = initialPlayerState.songLyricsLines;
 
@@ -99,49 +100,53 @@ export function useRemotePlayback(audioRef: React.RefObject<HTMLAudioElement | n
       syncRef.current.pendingSeek = false;
     };
 
-    const loadTrack = async (mid: string) => {
+    const loadTrack = async (mid: string, platform: Platform) => {
       const version = ++trackVersion;
       trackController?.abort();
       trackController = new AbortController();
       const signal = trackController.signal;
-      loadedMid = '';
+      loadedTrack = '';
+      loadingTrack = `${platform}:${mid}`;
       lyrics = [];
       audio.pause();
       audio.removeAttribute('src');
       audio.load();
       updateState({
-        songMid: mid, songName: '', songSinger: '', songAlbum: '',
+        songMid: mid, songPlatform: platform, songName: '', songSinger: '', songAlbum: '',
         songCoverPmid: '', songCoverUrl: '', songCoverColorDominant: '', songCoverColorPalette: [],
         songLyricsLines: [], currentLyrics: '', currentLyricsIndex: -1, isBuffering: true,
       });
       try {
-        const song = await getSong(mid, signal);
+        const song = await getSong(mid, platform, signal);
         if (disposed || version !== trackVersion) return;
         const pmid = song.track_info?.album?.pmid ?? '';
+        const cover = platform === 'netease' ? song.track_info?.album?.picUrl ?? '' : pmid;
         updateState({
           songName: song.track_info?.title ?? '',
           songSinger: song.track_info?.singer?.map(singer => singer.name ?? singer.title ?? '').filter(Boolean).join(' / ') ?? '',
           songAlbum: song.track_info?.album?.name ?? '',
           songCoverPmid: pmid,
-          songCoverUrl: pmid ? `https://y.qq.com/music/photo_new/T002R800x800M000${pmid}.jpg` : '',
+          songCoverUrl: getCoverImageUrl(cover, platform, true),
         });
-        loadedMid = mid;
+        loadedTrack = `${platform}:${mid}`;
+        loadingTrack = '';
         syncRef.current.pendingSeek = true;
         audio.src = song.url;
         audio.load();
 
-        void getLyrics(mid, signal).then(lines => {
+        void getLyrics(mid, platform, signal).then(lines => {
           if (disposed || version !== trackVersion) return;
           lyrics = lines;
           updateState({ songLyricsLines: lyrics });
           publishAudio();
         }).catch(error => { if (!signal.aborted) console.warn('获取歌词失败', error); });
-        void getCoverColors(pmid).then(colors => {
+        void getCoverColors(cover, platform).then(colors => {
           if (disposed || version !== trackVersion) return;
           updateState({ songCoverColorDominant: colors.dominant_color, songCoverColorPalette: colors.palette });
         }).catch(error => console.warn('提取封面颜色失败', error));
       } catch (error) {
         if (signal.aborted || disposed || version !== trackVersion) return;
+        loadingTrack = '';
         console.error('加载歌曲失败', error);
         updateState({ songMid: '', isBuffering: false, statusText: '加载失败' });
       }
@@ -153,7 +158,7 @@ export function useRemotePlayback(audioRef: React.RefObject<HTMLAudioElement | n
       publishAudio(false);
     };
     const onWaiting = () => publishAudio(true);
-    // QRC 行切换按帧检查，只在行变化时发布状态，避免 timeupdate 的低频延迟。
+    // 逐字歌词行切换按帧检查，只在行变化时发布状态，避免 timeupdate 的低频延迟。
     let lyricFrame = 0;
     const tickLyrics = () => {
       lyricFrame = 0;
@@ -215,6 +220,21 @@ export function useRemotePlayback(audioRef: React.RefObject<HTMLAudioElement | n
           const feedback = message.data;
           const playing = feedback.event === 'play' || feedback.status === true;
           const mid = feedback.songMid ?? '';
+          const platform: Platform = feedback.songSource === 'netease' ? 'netease' : 'qq';
+          const track = `${platform}:${mid}`;
+          if (feedback.songSource === 'local') {
+            trackController?.abort();
+            trackVersion++;
+            loadedTrack = '';
+            loadingTrack = '';
+            syncRef.current.playing = false;
+            audio.pause();
+            audio.removeAttribute('src');
+            audio.load();
+            lyrics = [];
+            updateState({ ...initialPlayerState, isWsOpen: true, volume: audio.volume, statusText: '暂不支持本地音乐' });
+            return;
+          }
           const startTime = (feedback.systemTime ?? Date.now()) - (feedback.currentTime ?? 0) * 1000;
           syncRef.current.playing = playing;
           if (!playing || !mid) {
@@ -223,10 +243,10 @@ export function useRemotePlayback(audioRef: React.RefObject<HTMLAudioElement | n
             return;
           }
           syncRef.current.startTime = startTime;
-          if (mid !== loadedMid && mid !== stateRef.current.songMid) {
+          if (track !== loadedTrack && track !== loadingTrack) {
             lastStartTime = startTime;
-            void loadTrack(mid);
-          } else if (mid === loadedMid) {
+            void loadTrack(mid, platform);
+          } else if (track === loadedTrack) {
             if (Math.abs(startTime - lastStartTime) > 500) lastStartTime = startTime;
             if (!audio.paused) {
               const expected = Math.max(0, (Date.now() + syncRef.current.serverOffset - startTime) / 1000);
