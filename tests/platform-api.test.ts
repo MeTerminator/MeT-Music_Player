@@ -54,3 +54,17 @@ test('cover proxy preserves NetEase picture URLs and selects high resolution', (
   assert.equal(qq.searchParams.get('platform'), 'qq');
   assert.equal(getCoverImageUrl('', 'netease'), '');
 });
+
+
+test('playback upgrades HTTP links before caching without rewriting signed queries', async t => {
+  const url = 'http://m801.music.126.net/signed/audio.mp3?vuutv=a+b/c==&x=%2F';
+  let requests = 0;
+  t.mock.method(globalThis, 'fetch', async () => {
+    requests++;
+    return new Response(JSON.stringify({ data: [{ url }] }));
+  });
+  const song = await getSong('http-url-id', 'netease');
+  assert.equal(song.url, url.replace('http:', 'https:'));
+  assert.equal((await getSong('http-url-id', 'netease')).url, song.url);
+  assert.equal(requests, 1);
+});

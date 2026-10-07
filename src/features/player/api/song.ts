@@ -23,7 +23,8 @@ export async function getSong(mid: string, platform: Platform = 'qq', signal?: A
   const body = await response.json() as { data?: Array<Partial<SongData>> };
   const entry = body.data?.[0];
   if (!entry?.url) throw new Error(`歌曲 ${mid} 没有可播放链接`);
-  const song: SongData = { ...entry, mid, url: entry.url };
+  // Keep the signed path/query intact while avoiding mixed content on HTTPS pages.
+  const song: SongData = { ...entry, mid, url: entry.url.replace(/^http:/, 'https:') };
   songCache.set(key, song);
   return song;
 }

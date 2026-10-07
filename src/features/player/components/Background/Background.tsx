@@ -1,12 +1,10 @@
 import { BackgroundRender, MeshGradientRenderer } from '@applemusic-like-lyrics/react';
 import { usePlayer } from '../../context/PlayerContext';
-import { getCoverImageUrl } from '../../api/song';
 import './Background.css';
 
 function Background() {
     const { playerState } = usePlayer();
-    const { isPlaying, songCoverPmid, songLyricsLines } = playerState;
-    const backgroundCoverUrl = getCoverImageUrl(songCoverPmid);
+    const { isPlaying, songCoverUrl: backgroundCoverUrl, songLyricsLines } = playerState;
     const visible = isPlaying && !!backgroundCoverUrl;
 
     return (
